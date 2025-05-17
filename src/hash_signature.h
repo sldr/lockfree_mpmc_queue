@@ -32,6 +32,11 @@
 #include <cstring>
 #include <iostream>
 #include <string_view>
+#include <memory.h>
+#ifdef _WIN32
+#include <intrin.h>
+#define __builtin_popcount __popcnt
+#endif
 
 namespace es::utils {
 
@@ -96,10 +101,10 @@ hash_signature& hash_signature::add(std::string_view sv)
     while (sv.size() > 0)
     {
         _value = 0;
-        memcpy(_buffer, sv.begin(), (sv.size() > sizeof(_buffer) ? sizeof(_buffer) : sv.size()));
+        memcpy(_buffer, &sv[0], (sv.size() > sizeof(_buffer) ? sizeof(_buffer) : sv.size()));
         add(_value);
         if (sv.size() > sizeof(_buffer))
-            sv = {sv.begin() + sizeof(_buffer), sv.size() - sizeof(_buffer)};
+            sv = {&sv[0] + sizeof(_buffer), sv.size() - sizeof(_buffer)};
         else
             break;
     }

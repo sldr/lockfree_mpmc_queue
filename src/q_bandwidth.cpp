@@ -37,6 +37,19 @@
 #include <functional>
 #include <thread>
 #include <vector>
+#ifdef _WIN32
+#include <getopt.h>
+#endif
+
+#ifdef __GNUC__
+#define PACK__
+#define __PACK __attribute__((__packed__))
+#endif
+
+#ifdef _MSC_VER
+#define PACK__ __pragma(pack(push, 1))
+#define __PACK __pragma(pack(pop))
+#endif
 
 #if defined(COMPARE_BOOST) && COMPARE_BOOST == 1
 namespace boost::lockfree {
@@ -141,13 +154,13 @@ void test_bandwidth_mpmc_queue(size_t qdepth = Q_DEPTH, unsigned producers = 1, 
     }
 }
 
-struct Data12
+PACK__ struct Data12
 {
     Data12() = default;
     Data12(uint64_t v0, uint16_t v1 = 0, uint16_t v2 = 0) : a(v0), b(v1), c(v2) {}
     uint64_t a;
     uint16_t b, c;
-} __attribute__((packed));
+} __PACK;
 static_assert(sizeof(Data12) == 12, "something wrong");
 
 inline std::ostream& operator<<(std::ostream& os, const uint8_t& u8)

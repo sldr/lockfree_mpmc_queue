@@ -35,10 +35,31 @@
 #include <iostream>
 #include <memory>
 #include <type_traits>
+#include <string>
+
+#ifdef _WIN32
+#include <intrin.h>
+#include <__msvc_int128.hpp>
+#include "atomic__msvc_int128.h"
+#define __extension__
+#define UINT128TYPE std::_Signed128;
+#define GNU_U_HOT
+#define GNU_U_HOT_FLATTEN
+#define GNU_U_USED
+#define GNU_U_USED_NOINLINE_WEAK
+#define GNU_WEAK_NOINLINE_USED
+#else
+#define UINT128TYPE unsigned __int128
+#define GNU_U_HOT [[using gnu: hot]]
+#define GNU_U_HOT_FLATTEN [[using gnu: hot, flatten]]
+#define GNU_U_USED [[using gnu: used]]
+#define GNU_U_USED_NOINLINE_WEAK [[using gnu: used, noinline, weak]]
+#define GNU_WEAK_NOINLINE_USED [[gnu::weak, gnu::noinline, gnu::used]]
+#endif
 
 namespace es::lockfree {
 
-__extension__ using uint128_t = unsigned __int128;
+__extension__ using uint128_t = UINT128TYPE;
 
 inline static constexpr size_t cachelinesize{64};
 
@@ -140,6 +161,8 @@ private:
         false  // clang++ uses builtin for std::atomic<__int128>
 #elif defined(__GNUC__)
         true  // enable the __sync... builtin functions instead of std::atomic<> that call atomic library.
+#elif defined(_MSVC_LANG)
+        false  // MSVC uses the atomic__msvc_int128.h for atomic template specialization for std::atomic<std::_Signed128> and std::atomic<std::_Unsigned128>
 #else
         false  // other compilers
 #endif
@@ -213,7 +236,7 @@ private:
             return *this;
         }
 
-        [[using gnu: hot]] entry_as_value load() noexcept
+        GNU_U_HOT entry_as_value load() noexcept
         {
             if constexpr (sizeof(entry_as_value) == 16 && Q_USE_BUILTIN_16B)
                 return __sync_val_compare_and_swap(&this->_u._value, 0, 0);
@@ -221,7 +244,7 @@ private:
                 return reinterpret_cast<std::atomic<entry_as_value>*>(this)->load();
         }
 
-        [[using gnu: hot]] entry_as_value load() const noexcept
+        GNU_U_HOT entry_as_value load() const noexcept
         {
             if constexpr (sizeof(entry_as_value) == 16 && Q_USE_BUILTIN_16B)
                 return __sync_val_compare_and_swap(&this->_u._value, 0, 0);
@@ -229,7 +252,7 @@ private:
                 return reinterpret_cast<const std::atomic<entry_as_value>*>(this)->load();
         }
 
-        [[using gnu: hot]] bool compare_exchange(entry expected, entry new_value) noexcept
+        GNU_U_HOT bool compare_exchange(entry expected, entry new_value) noexcept
         {
             if constexpr (sizeof(entry_as_value) == 16 && Q_USE_BUILTIN_16B)
                 return __sync_bool_compare_and_swap(&this->_u._value, expected._u._value, new_value._u._value);
@@ -278,9 +301,9 @@ public:
     mpmc_queue& operator=(const mpmc_queue&) = delete;
     mpmc_queue& operator=(mpmc_queue&&)      = delete;
 
-    [[using gnu: hot, flatten]] bool enqueue(value_type d) noexcept { return push(d); }
+    GNU_U_HOT_FLATTEN bool enqueue(value_type d) noexcept { return push(d); }
 
-    [[using gnu: hot, flatten]] bool push(value_type d) noexcept
+    GNU_U_HOT_FLATTEN bool push(value_type d) noexcept
     {
         while (true)
         {
@@ -314,9 +337,9 @@ public:
         }
     }
 
-    [[using gnu: hot, flatten]] bool dequeue(value_type& d) noexcept { return pop(d); }
+    GNU_U_HOT_FLATTEN bool dequeue(value_type& d) noexcept { return pop(d); }
 
-    [[using gnu: hot, flatten]] bool pop(value_type& d) noexcept
+    GNU_U_HOT_FLATTEN bool pop(value_type& d) noexcept
     {
         index_type rd_index = _read_index.load();
 
@@ -350,9 +373,9 @@ public:
         }
     }
 
-    [[using gnu: hot, flatten]] bool enqueue(value_type d, index_type& i) noexcept { return push(d, i); }
+    GNU_U_HOT_FLATTEN bool enqueue(value_type d, index_type& i) noexcept { return push(d, i); }
 
-    [[using gnu: hot, flatten]] bool push(value_type d, index_type& i) noexcept
+    GNU_U_HOT_FLATTEN bool push(value_type d, index_type& i) noexcept
     {
         while (true)
         {
@@ -387,9 +410,9 @@ public:
         }
     }
 
-    [[using gnu: hot, flatten]] bool dequeue(value_type& d, index_type& i) noexcept { return pop(d, i); }
+    GNU_U_HOT_FLATTEN bool dequeue(value_type& d, index_type& i) noexcept { return pop(d, i); }
 
-    [[using gnu: hot, flatten]] bool pop(value_type& d, index_type& i) noexcept
+    GNU_U_HOT_FLATTEN bool pop(value_type& d, index_type& i) noexcept
     {
         while (true)
         {
@@ -423,7 +446,7 @@ public:
         }
     }
 
-    [[using gnu: hot, flatten]] bool push_keep_n(value_type d) noexcept
+    GNU_U_HOT_FLATTEN bool push_keep_n(value_type d) noexcept
     {
         while (true)
         {
@@ -433,7 +456,7 @@ public:
         }
     }
 
-    [[using gnu: hot, flatten]] bool push_keep_n(value_type d, index_type& i) noexcept
+    GNU_U_HOT_FLATTEN bool push_keep_n(value_type d, index_type& i) noexcept
     {
         while (true)
         {
@@ -443,7 +466,7 @@ public:
         }
     }
 
-    [[using gnu: hot, flatten]] bool exchange(index_type& i, value_type old_value, value_type new_value) noexcept
+    GNU_U_HOT_FLATTEN bool exchange(index_type& i, value_type old_value, value_type new_value) noexcept
     {
         entry old_entry{static_cast<index_type>((i << 1) | 1U), old_value};
         entry new_entry{static_cast<index_type>((i << 1) | 1U), new_value};
@@ -451,7 +474,7 @@ public:
         return _array[i].compare_exchange(old_entry, new_entry);
     }
 
-    [[using gnu: hot]] bool peek(value_type& d) noexcept
+    GNU_U_HOT bool peek(value_type& d) noexcept
     {
         while (true)
         {
@@ -475,7 +498,7 @@ public:
         }
     }
 
-    [[using gnu: hot]] bool peek(value_type& d, index_type& i) noexcept
+    GNU_U_HOT bool peek(value_type& d, index_type& i) noexcept
     {
         while (true)
         {
@@ -501,7 +524,7 @@ public:
     }
 
     template<typename F>
-    [[using gnu: hot, flatten]] bool pop_if(F& f, value_type& d) noexcept
+    GNU_U_HOT_FLATTEN bool pop_if(F& f, value_type& d) noexcept
     {
         while (true)
         {
@@ -538,7 +561,7 @@ public:
     }
 
     template<typename F>
-    [[using gnu: hot, flatten]] uint64_t consume(F&& f)
+    GNU_U_HOT_FLATTEN uint64_t consume(F&& f)
     {
         uint64_t   r{0};
         value_type v;
@@ -551,7 +574,7 @@ public:
         return r;
     }
 
-    [[using gnu: hot, flatten]] bool empty() noexcept
+    GNU_U_HOT_FLATTEN bool empty() noexcept
     {
         index_type rd_index = _read_index.load();
         entry      e{_array[rd_index].load()};
@@ -559,7 +582,7 @@ public:
         if (e.get_seq() == static_cast<index_type>(rd_index << 1)) return true;
         return false;
     }
-    [[using gnu: hot, flatten]] [[nodiscard]] bool empty() const noexcept
+    GNU_U_HOT_FLATTEN [[nodiscard]] bool empty() const noexcept
     {
         index_type rd_index = _read_index.load();
         entry      e{_array[rd_index].load()};
@@ -568,7 +591,7 @@ public:
         return false;
     }
 
-    [[using gnu: hot, flatten]] [[nodiscard]] size_t size() const noexcept
+    GNU_U_HOT_FLATTEN [[nodiscard]] size_t size() const noexcept
     {
         if (empty()) return 0;
         if (_write_index >= _read_index) return _write_index - _read_index;
@@ -580,9 +603,9 @@ public:
     [[nodiscard]] constexpr size_t        entry_size() const noexcept { return sizeof(entry); }
     [[nodiscard]] static constexpr size_t size_n() { return N; }
 
-    [[using gnu: used]] std::ostream& dump_state(std::ostream& os) noexcept;
+    GNU_U_USED std::ostream& dump_state(std::ostream& os) noexcept;
 
-    [[using gnu: used, noinline, weak]] void dump_state() noexcept;
+    GNU_U_USED_NOINLINE_WEAK void dump_state() noexcept;
 
 private:
     std::atomic<index_type> _write_index alignas(2 * cachelinesize);
@@ -591,7 +614,7 @@ private:
 };
 
 template<typename Data_t, size_t N, typename Index_t, bool lazy_push, bool lazy_pop>
-[[gnu::weak, gnu::noinline, gnu::used]] void mpmc_queue<Data_t, N, Index_t, lazy_push, lazy_pop>::dump_state() noexcept
+GNU_WEAK_NOINLINE_USED void mpmc_queue<Data_t, N, Index_t, lazy_push, lazy_pop>::dump_state() noexcept
 {
     dump_state(std::cerr);
 }
@@ -616,7 +639,7 @@ inline std::ostream& mpmc_queue<DataT, N, IndexT, lazy_push, lazy_pop>::dump_sta
     }
     index_type ewr_index = _write_index.load() & ~(1UL << (bits_in_index() - 1));
     index_type erd_index = _read_index.load() & ~(1UL << (bits_in_index() - 1));
-    index_type indexdiff = (ewr_index >= erd_index) ? (ewr_index - erd_index) : (ewr_index + _array.size() - erd_index);
+    index_type indexdiff = (ewr_index >= erd_index) ? (ewr_index - erd_index) : (ewr_index + static_cast<index_type>(_array.size()) - erd_index);
     // clang-format off
     os << "mpmc_queue Queue dump:"
        << "\n Q is_always_lock_free: " << (is_always_lock_free ? "true" : "false")

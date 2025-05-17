@@ -24,6 +24,13 @@
 //
 
 #include <shared_mpmc_queue.h>
+#ifdef _WIN32
+#include <Windows.h>
+void sleep(int seconds)
+{
+  ::Sleep(seconds * 1000);
+}
+#endif
 
 int main(int argc, char** argv)
 {

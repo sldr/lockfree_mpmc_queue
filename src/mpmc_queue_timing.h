@@ -34,11 +34,41 @@
 #include <vector>
 //
 #include <stdlib.h>  // abort()
+#ifdef _WIN32
+#include <sys/timeb.h>
+#include <winsock.h>
+#include <windows.h>
+#else
 #include <sys/time.h>
 #include <unistd.h>
 #include <x86intrin.h>
+#endif
 
 namespace es::lockfree::tests {
+
+#ifdef _WIN32
+int gettimeofday(struct timeval* tv, struct timezone* tz)
+{
+    FILETIME       ft;
+    ULARGE_INTEGER ull;
+    const uint64_t EPOCH_DIFFERENCE = 11644473600000000ULL;  // Difference between 1601 and 1970 in microseconds
+
+    GetSystemTimeAsFileTime(&ft);
+    ull.LowPart  = ft.dwLowDateTime;
+    ull.HighPart = ft.dwHighDateTime;
+
+    uint64_t time = (ull.QuadPart / 10) - EPOCH_DIFFERENCE;  // Convert to microseconds
+    tv->tv_sec    = (long)(time / 1000000);
+    tv->tv_usec   = (long)(time % 1000000);
+
+    return 0;
+}
+
+void usleep(uint64_t microseconds)
+{
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+}
+#endif
 
 uint64_t rdtsc() { return __rdtsc(); }
 

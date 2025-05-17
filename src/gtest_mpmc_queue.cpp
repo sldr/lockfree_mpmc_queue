@@ -36,6 +36,20 @@
 #include <mutex>
 #include <thread>
 
+#ifdef __GNUC__
+#define PACK__
+#define __PACK __attribute__((__packed__))
+#endif
+
+#ifdef _MSC_VER
+#define PACK__ __pragma(pack(push, 1))
+#define __PACK __pragma(pack(pop))
+#endif
+
+#ifdef _MSC_VER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
 struct Globals
 {
     bool verbose{false};
@@ -322,13 +336,21 @@ TEST(MPMC_Queue_FunctionalityTest, PushPopIndex)
     ASSERT_TRUE(b);
 }
 
+#ifdef _WIN32
+__pragma(pack(push, 1))
+#endif
 struct Data12
 {
     Data12() = default;
     Data12(uint64_t v0, uint16_t v1 = 0, uint16_t v2 = 0) : a(v0), b(v1), c(v2) {}
     uint64_t a;
     uint16_t b, c;
-} __attribute__((packed));
+}
+#ifdef _WIN32
+__pragma(pack(pop));
+#else
+__attribute__((__packed__));
+#endif
 static_assert(sizeof(Data12) == 12, "something wrong");
 
 std::ostream &operator<<(std::ostream &os, const Data12 &d12)
@@ -431,11 +453,11 @@ public:
     void unlock() { _spin_lock.clear(); }
 };
 
-struct Data2
+PACK__ struct Data2
 {
     uint64_t _v;
     uint8_t  _hindex;
-} __attribute__((packed));
+} __PACK;
 std::ostream &operator<<(std::ostream &os, const Data2 &d)
 {
     os << "Data2: _v: " << d._v << " index: " << d._hindex;
@@ -498,12 +520,12 @@ TEST(MPMC_Queue_FunctionalityTest, hash2)
     EXPECT_TRUE(same);
 }
 
-struct Data3
+PACK__ struct Data3
 {
     uint32_t _v;
     uint32_t _seq_num;
     uint8_t  _hindex;
-} __attribute__((packed));
+} __PACK;
 std::ostream &operator<<(std::ostream &os, const Data3 &d)
 {
     os << "Data3: _v: " << d._v << " index: " << d._hindex;
