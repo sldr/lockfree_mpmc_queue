@@ -49,6 +49,7 @@ namespace es::lockfree::tests {
 #ifdef _WIN32
 int gettimeofday(struct timeval* tv, struct timezone* tz)
 {
+    (void*)tz;
     FILETIME       ft;
     ULARGE_INTEGER ull;
     const uint64_t EPOCH_DIFFERENCE = 11644473600000000ULL;  // Difference between 1601 and 1970 in microseconds
@@ -89,8 +90,8 @@ inline uint64_t tsc_per_milli(bool force = false)
     gettimeofday(&todend, nullptr);
     ccend1 = rdtsc();
 
-    tsc_in_milli = 1000.0 * ((ccend1 + ccend0) / 2 - (ccstart1 + ccstart0) / 2) /
-                   ((todend.tv_sec - todstart.tv_sec) * 1000000UL + todend.tv_usec - todstart.tv_usec);
+    tsc_in_milli = static_cast<uint64_t>(1000.0 * ((ccend1 + ccend0) / 2 - (ccstart1 + ccstart0) / 2) /
+                   ((todend.tv_sec - todstart.tv_sec) * 1000000UL + todend.tv_usec - todstart.tv_usec));
     return tsc_in_milli;
 }
 
@@ -241,14 +242,14 @@ void QBandwidth<Q>::run(const std::string& name)
                                      ;
                                  while (_state == 1)
                                  {
-                                     typename Q::value_type d = counter;
+                                     typename Q::value_type d = static_cast<typename Q::value_type>(counter);
                                      if (_q.push(d)) counter++;
                                  }
                                  _push_counter[writer_id] = counter;
                                  // std::cout << "producer[" << writer_id << "]: ended\n";
                                  --_producers_counter;
                              },
-                             (&writer - &_producers[0])};
+                             (static_cast<unsigned>(&writer - &_producers[0]))};
     }
 
     for (auto& reader : _consumers)
@@ -272,7 +273,7 @@ void QBandwidth<Q>::run(const std::string& name)
                                  // std::cout << "consumer[" << reader_id << "]: ended: " << counter
                                  //          << (_q.empty() ? " Empty OK" : " non empty ERROR") << '\n';
                              },
-                             (&reader - &_consumers[0])};
+                             (static_cast<unsigned>(&reader - &_consumers[0]))};
     }
 
     for (auto& x : _push_counter) x = 0;

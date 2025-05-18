@@ -9,12 +9,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(.)
 include_directories(src)
 
+# Option: Enable or disable COMPARE_BOOST
+option(COMPARE_BOOST "Enable COMPARE_BOOST functionality" OFF)
+
 # Platform-specific compile options
 if (MSVC)
     add_compile_options(/W4 /permissive- /bigobj)
 else()
     add_compile_options(-Wall -Wextra -Wshadow -Wpedantic -O3 -ggdb3 -mcx16)
-    add_definitions(-DCOMPARE_BOOST=0)
 endif()
 
 # GTest dependency
@@ -33,13 +35,28 @@ if(WIN32)
         wingetopt
         GIT_REPOSITORY https://github.com/sldr/wingetopt.git
         GIT_TAG        master  # Pin this if possible for reproducibility
-        DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(wingetopt)
 
     # Link the wingetopt library to the needed targets
     set(WINGETOPT_TARGET wingetopt)  # Or wingetopt::wingetopt if exported with namespace
 endif()
+
+# Helper macro to apply COMPARE_BOOST and pthread
+macro(configure_target target)
+    if(COMPARE_BOOST)
+        target_compile_definitions(${target} PRIVATE COMPARE_BOOST=1)
+    else()
+        target_compile_definitions(${target} PRIVATE COMPARE_BOOST=0)
+    endif()
+
+    if(WIN32)
+        target_compile_definitions(${target} PRIVATE _CRT_SECURE_NO_WARNINGS=1)
+    else()
+        target_link_libraries(${target} PRIVATE pthread)
+    endif()
+endmacro()
 
 # Executable: gtest_mpmc_queue
 add_executable(gtest_mpmc_queue
@@ -49,8 +66,8 @@ add_executable(gtest_mpmc_queue
 target_link_libraries(gtest_mpmc_queue PRIVATE gtest_main)
 if(WIN32)
     target_link_libraries(gtest_mpmc_queue PRIVATE ${WINGETOPT_TARGET})
-    target_compile_definitions(gtest_mpmc_queue PRIVATE USE_WINGETOPT)
 endif()
+configure_target(gtest_mpmc_queue)
 
 # Executable: shared_mpmc_queue
 add_executable(shared_mpmc_queue
@@ -60,8 +77,8 @@ add_executable(shared_mpmc_queue
 )
 if(WIN32)
     target_link_libraries(shared_mpmc_queue PRIVATE ${WINGETOPT_TARGET})
-    target_compile_definitions(shared_mpmc_queue PRIVATE USE_WINGETOPT)
 endif()
+configure_target(shared_mpmc_queue)
 
 # Executable: q_bandwidth
 add_executable(q_bandwidth
@@ -73,6 +90,7 @@ if(WIN32)
     target_link_libraries(q_bandwidth PRIVATE ${WINGETOPT_TARGET})
     target_compile_definitions(q_bandwidth PRIVATE USE_WINGETOPT)
 endif()
+configure_target(q_bandwidth)
 
 # Executable: test_uniqptr_q
 add_executable(test_uniqptr_q
@@ -81,13 +99,5 @@ add_executable(test_uniqptr_q
 )
 if(WIN32)
     target_link_libraries(test_uniqptr_q PRIVATE ${WINGETOPT_TARGET})
-    target_compile_definitions(test_uniqptr_q PRIVATE USE_WINGETOPT)
 endif()
-
-# Link pthread on non-Windows
-if (NOT WIN32)
-    target_link_libraries(gtest_mpmc_queue pthread)
-    target_link_libraries(shared_mpmc_queue pthread)
-    target_link_libraries(q_bandwidth pthread)
-    target_link_libraries(test_uniqptr_q pthread)
-endif()
+configure_target(test_uniqptr_q)

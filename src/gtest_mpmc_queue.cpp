@@ -492,7 +492,7 @@ TEST(MPMC_Queue_FunctionalityTest, hash2)
                             }
                             producers_count--;
                         },
-                        (&p - &producers[0])};
+                        (static_cast<uint8_t>(&p - &producers[0]))};
 
     while (qut.empty())
         ;
@@ -559,7 +559,7 @@ TEST(MPMC_Queue_FunctionalityTest, hash3)
                             }
                             producers_count--;
                         },
-                        (&p - &producers[0])};
+                        (static_cast<uint8_t>(&p - &producers[0]))};
 
     while (qut.empty())
         ;

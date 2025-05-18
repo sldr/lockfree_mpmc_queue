@@ -34,28 +34,27 @@ public:
 
     inline operator std::_Signed128() const noexcept { return load(); }
 
-    inline void store(std::_Signed128 value, const memory_order order = memory_order_seq_cst) noexcept
+    inline void store(std::_Signed128 value) noexcept
     {
-        // TODO: Only support memory_order_seq_cst at compile time
+        // Changing order from memory_order_seq_cst is not supported
         exchange(value);
     };
 
-    inline [[nodiscard]] std::_Signed128 load(const memory_order order = memory_order_seq_cst) const noexcept
+    inline [[nodiscard]] std::_Signed128 load() const noexcept
     {
-        // TODO: Only support memory_order_seq_cst at compile time
+        // Changing order from memory_order_seq_cst is not supported
         std::_Signed128 expected;
         _InterlockedCompareExchange128((volatile long long*)(&this->_value._Word[0]), expected._Word[1],
                                        expected._Word[0], (long long*)&expected._Word[0]);
         return expected;
     }
 
-    inline std::_Signed128 exchange(std::_Signed128 value, const memory_order order = memory_order_seq_cst) noexcept
+    inline std::_Signed128 exchange(std::_Signed128 value) noexcept
     {
-        // TODO: Only support memory_order_seq_cst at compile time
+        // Changing order from memory_order_seq_cst is not supported
         std::_Signed128 expected;
         while (true)
         {
-            // if (_InterlockedCompareExchange128((volatile long long*)(&this->_value._Word[0]), value._Word[1], value._Word[0], (long long*)&expected._Word[0]))
             if (compare_exchange_strong(expected, value))
             {
                 return expected;
@@ -63,10 +62,9 @@ public:
         }
     }
 
-    inline bool compare_exchange_strong(std::_Signed128& expected, std::_Signed128 desired,
-                                        const memory_order _Order = memory_order_seq_cst) noexcept
+    inline bool compare_exchange_strong(std::_Signed128& expected, std::_Signed128 desired) noexcept
     {
-        // TODO: Only support memory_order_seq_cst at compile time
+        // Changing order from memory_order_seq_cst is not supported
         if (_InterlockedCompareExchange128((volatile long long*)(&this->_value._Word[0]), desired._Word[1],
                                            desired._Word[0], (long long*)&expected._Word[0]))
         {
@@ -106,24 +104,24 @@ public:
 
     inline operator std::_Unsigned128() const noexcept { return load(); }
 
-    inline void store(std::_Unsigned128 value, const memory_order order = memory_order_seq_cst) noexcept
+    inline void store(std::_Unsigned128 value) noexcept
     {
-        // TODO: Only support memory_order_seq_cst at compile time
+        // Changing order from memory_order_seq_cst is not supported
         exchange(value);
     };
 
-    inline [[nodiscard]] std::_Unsigned128 load(const memory_order order = memory_order_seq_cst) const noexcept
+    inline [[nodiscard]] std::_Unsigned128 load() const noexcept
     {
-        // TODO: Only support memory_order_seq_cst at compile time
+        // Changing order from memory_order_seq_cst is not supported
         std::_Unsigned128 expected;
         _InterlockedCompareExchange128((volatile long long*)(&this->_value._Word[0]), expected._Word[1],
                                        expected._Word[0], (long long*)&expected._Word[0]);
         return expected;
     }
 
-    inline std::_Unsigned128 exchange(std::_Unsigned128 value, const memory_order order = memory_order_seq_cst) noexcept
+    inline std::_Unsigned128 exchange(std::_Unsigned128 value) noexcept
     {
-        // TODO: Only support memory_order_seq_cst at compile time
+        // Changing order from memory_order_seq_cst is not supported
         std::_Unsigned128 expected;
         while (true)
         {
@@ -135,10 +133,9 @@ public:
         }
     }
 
-    inline bool compare_exchange_strong(std::_Unsigned128& expected, std::_Unsigned128 desired,
-                                        const memory_order _Order = memory_order_seq_cst) noexcept
+    inline bool compare_exchange_strong(std::_Unsigned128& expected, std::_Unsigned128 desired) noexcept
     {
-        // TODO: Only support memory_order_seq_cst at compile time
+        // Changing order from memory_order_seq_cst is not supported
         if (_InterlockedCompareExchange128((volatile long long*)(&this->_value._Word[0]), desired._Word[1],
                                            desired._Word[0], (long long*)&expected._Word[0]))
         {

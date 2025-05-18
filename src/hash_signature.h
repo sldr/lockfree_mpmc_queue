@@ -80,7 +80,7 @@ std::pair<hash_signature::value_type, uint64_t> hash_signature::state() { return
 
 hash_signature& hash_signature::add(value_type v)
 {
-    if (__builtin_popcount(v) < 20) v += 0xA500A500A5A5;
+    if (__builtin_popcount(static_cast<unsigned int>(v)) < 20) v += 0xA500A500A5A5;
     _state = (v + _state) * ((v << 3) + (_state << 1) + 1);
     _count++;
     return *this;

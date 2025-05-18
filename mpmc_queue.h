@@ -76,10 +76,18 @@ struct unit_value<16>
     using type = uint128_t;
 };
 
+#ifdef WIN32
+#pragma warning(push)
+#pragma warning(disable : 4324)  // warning C4324: 'es::lockfree::mpmc_queue<Data *,0,IndexT,false,false>': structure
+                                 // was padded due to alignment specifier
+#endif
 template<typename T, unsigned A>
 class alignas(A) aligned_type : public T
 {
 };
+#ifdef WIN32
+#pragma warning(pop)
+#endif
 
 template<typename T, unsigned N>
 class array_inplace
@@ -281,7 +289,7 @@ public:
         }
         else
         {
-            if ((n & (n - 1)) != 0 || bits_in_index() <= bits_for_value(n))
+            if ((n & (n - 1)) != 0 || bits_in_index() <= bits_for_value(static_cast<unsigned>(n)))
                 throw(std::invalid_argument{std::string{"wrong size provided to atomic_mpmc_queue constructor: "} +
                                             std::to_string(n)});
         }
@@ -608,9 +616,16 @@ public:
     GNU_U_USED_NOINLINE_WEAK void dump_state() noexcept;
 
 private:
+#ifdef WIN32
+#pragma warning(push)
+#pragma warning(disable : 4324) // warning C4324: 'es::lockfree::mpmc_queue<Data *,0,IndexT,false,false>': structure was padded due to alignment specifier
+#endif
     std::atomic<index_type> _write_index alignas(2 * cachelinesize);
     std::atomic<index_type> _read_index alignas(2 * cachelinesize);
     array_t                 _array;
+#ifdef WIN32
+#pragma warning(pop)
+#endif
 };
 
 template<typename Data_t, size_t N, typename Index_t, bool lazy_push, bool lazy_pop>
@@ -657,7 +672,7 @@ inline std::ostream& mpmc_queue<DataT, N, IndexT, lazy_push, lazy_pop>::dump_sta
     show_entry(os, (unsigned)(_write_index&_array.index_mask()))
       << "\n Q read index: " << (uint64_t)_read_index << " " << (_read_index / _array.size()) << '_' << (_read_index % _array.size()) << "  -->";
     show_entry(os, (unsigned)(_read_index&_array.index_mask()))
-       << "\n Q write-read indexes: " << (unsigned long) indexdiff << '\n';
+       << "\n Q write-read indexes: " << (unsigned long long) indexdiff << '\n';
     // clang-format on
     for (unsigned i = 0; i < _array.size(); ++i)
     {
